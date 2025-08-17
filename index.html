@@ -25,7 +25,7 @@
 </head>
 <body>
   <header>
-    <img src="KLTF-logo.png" alt="KL Telugu Fellowship Logo" />
+    <img src="kltf-logo.png" alt="KL Telugu Fellowship Logo" />
     <h1>KL Telugu Fellowship</h1>
     <h2>Sports Day 2025 Dashboard</h2>
   </header>
@@ -80,44 +80,64 @@
   </footer>
 
   <script>
-    const participants = [
-      { Name: "Jyothi sareddy", Sports: "Badminton - Singles (women), Mixed doubles", Role: "player", Tshirt: "L" },
-      { Name: "Bharath Reddy S", Sports: "Badminton - Doubles (men), Mixed doubles, Cricket", Role: "player", Tshirt: "L" },
-      { Name: "Harsh", Sports: "Cricket", Role: "player", Tshirt: "XL" }
-    ];
+    async function fetchData() {
+      try {
+        // Replace with your published Google Sheet CSV link
+        const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/pub?output=csv";
+        const response = await fetch(sheetUrl);
+        const data = await response.text();
 
-    const sportsCount = {};
-    participants.forEach(p => {
-      p.Sports.split(",").forEach(sport => {
-        const s = sport.trim();
-        if (s) sportsCount[s] = (sportsCount[s] || 0) + 1;
-      });
-    });
+        const rows = data.split("\n").slice(1); // skip header
+        const participants = rows.map(r => {
+          const cols = r.split(",");
+          return { Name: cols[0], Sports: cols[1], Role: cols[2], Tshirt: cols[3] };
+        }).filter(p => p.Name);
 
-    const tshirtCount = {};
-    participants.forEach(p => {
-      if (p.Tshirt && p.Tshirt !== "Not needed") {
-        tshirtCount[p.Tshirt] = (tshirtCount[p.Tshirt] || 0) + 1;
+        renderDashboard(participants);
+      } catch (e) {
+        console.error("Error fetching Google Sheet data", e);
       }
-    });
+    }
 
-    new Chart(document.getElementById("sportsChart"), {
-      type: "pie",
-      data: { labels: Object.keys(sportsCount), datasets: [{ data: Object.values(sportsCount), backgroundColor: ["#4b0082", "#6a0dad", "#00C49F", "#FFBB28", "#FF8042", "#A28CFF", "#FF5CA2"] }] },
-    });
+    function renderDashboard(participants) {
+      const sportsCount = {};
+      participants.forEach(p => {
+        p.Sports.split(";").forEach(sport => {
+          const s = sport.trim();
+          if (s) sportsCount[s] = (sportsCount[s] || 0) + 1;
+        });
+      });
 
-    new Chart(document.getElementById("tshirtChart"), {
-      type: "bar",
-      data: { labels: Object.keys(tshirtCount), datasets: [{ label: "T-Shirts", data: Object.values(tshirtCount), backgroundColor: "#6a0dad" }] },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } }
-    });
+      const tshirtCount = {};
+      participants.forEach(p => {
+        if (p.Tshirt && p.Tshirt !== "Not needed") {
+          tshirtCount[p.Tshirt] = (tshirtCount[p.Tshirt] || 0) + 1;
+        }
+      });
 
-    const tableBody = document.getElementById("participantTable");
-    participants.forEach(p => {
-      const row = document.createElement("tr");
-      row.innerHTML = `<td>${p.Name}</td><td>${p.Sports}</td><td>${p.Role}</td><td>${p.Tshirt}</td>`;
-      tableBody.appendChild(row);
-    });
+      new Chart(document.getElementById("sportsChart"), {
+        type: "pie",
+        data: { labels: Object.keys(sportsCount), datasets: [{ data: Object.values(sportsCount), backgroundColor: ["#4b0082", "#6a0dad", "#00C49F", "#FFBB28", "#FF8042"] }] },
+      });
+
+      new Chart(document.getElementById("tshirtChart"), {
+        type: "bar",
+        data: { labels: Object.keys(tshirtCount), datasets: [{ label: "T-Shirts", data: Object.values(tshirtCount), backgroundColor: "#6a0dad" }] },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+
+      const tableBody = document.getElementById("participantTable");
+      tableBody.innerHTML = "";
+      participants.forEach(p => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${p.Name}</td><td>${p.Sports}</td><td>${p.Role}</td><td>${p.Tshirt}</td>`;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Auto-refresh every 60 seconds
+    fetchData();
+    setInterval(fetchData, 60000);
   </script>
 </body>
 </html>
