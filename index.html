@@ -4,19 +4,21 @@
   <meta charset="UTF-8">
   <title>KL Telugu Fellowship - Sports Day 2025 Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0; padding: 0;
-      background: #f4f4f9;
+      background: #f4f7fb;
       color: #333;
     }
     header {
-      background: #6a1b9a;
+      background: #4b0082;
       color: white;
-      padding: 15px 20px;
+      padding: 20px;
       display: flex;
       align-items: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
     header img {
       height: 50px;
@@ -24,14 +26,14 @@
     }
     header h1 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: 1.6rem;
     }
     section {
       margin: 20px;
     }
     h2 {
-      color: #6a1b9a;
-      border-bottom: 2px solid #d4af37;
+      color: #4b0082;
+      border-bottom: 2px solid #6a0dad;
       padding-bottom: 5px;
     }
     .info-section {
@@ -42,10 +44,15 @@
     .card {
       flex: 1;
       min-width: 280px;
-      background: #fff;
+      background: #ffffff;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     }
     table {
       width: 100%;
@@ -62,7 +69,7 @@
       white-space: nowrap;
     }
     th {
-      background: #6a1b9a;
+      background: #6a0dad;
       color: white;
     }
     .summary-box {
@@ -72,13 +79,19 @@
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .summary-box p {
-      margin: 5px 0;
+    .dashboard-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .dashboard-row .card {
+      flex: 1;
+      min-width: 280px;
     }
     @media (max-width: 768px) {
       header { flex-direction: column; align-items: flex-start; }
       header img { margin-bottom: 10px; }
-      .info-section { flex-direction: column; }
+      .info-section, .dashboard-row { flex-direction: column; }
     }
   </style>
 </head>
@@ -90,32 +103,16 @@
     <h1>KL Telugu Fellowship - Sports Day 2025 Dashboard</h1>
   </header>
 
-  <!-- Info Section -->
-  <section class="info-section">
-    <!-- Pastoral Team -->
+  <!-- T-Shirt Summary & Sport Chart side by side -->
+  <section class="dashboard-row">
     <div class="card">
-      <h2>Pastoral Team</h2>
-      <p><b>Sr. Pastor:</b> Rev. James Ravinderan</p>
-      <p><b>Asst. Pastor:</b> Jerry John</p>
-      <p><b>TF Co-Cordinator:</b> Aunty Prema</p>
+      <h2>T-Shirt Size Summary</h2>
+      <div class="summary-box" id="tshirtSummary">Loading...</div>
     </div>
-
-    <!-- Church Information -->
     <div class="card">
-      <h2>Church Information</h2>
-      <p><b>Address:</b><br>
-        197, Jln Sultan Abdul Samad,<br>
-        Brickfields, 50470 Kuala Lumpur</p>
-      <p><b>Phone:</b> +6016-985 6777</p>
-      <p><b>Email:</b> kltelugufellowship@gmail.com</p>
-      <p><b>Sunday Service:</b> 4:00 PM & 6:00 PM</p>
+      <h2>Participants per Sport</h2>
+      <canvas id="sportChart"></canvas>
     </div>
-  </section>
-
-  <!-- T-Shirt Summary -->
-  <section>
-    <h2>T-Shirt Size Summary</h2>
-    <div class="summary-box" id="tshirtSummary">Loading...</div>
   </section>
 
   <!-- Sports Participation Table -->
@@ -151,6 +148,28 @@
       </table>
     </div>
   </section>
+  
+    <!-- Info Section -->
+  <section class="info-section">
+    <!-- Pastoral Team -->
+    <div class="card">
+      <h2>Pastoral Team</h2>
+      <p><b>Sr. Pastor:</b> Rev. James Ravinderan</p>
+      <p><b>Asst. Pastor:</b> Jerry John</p>
+      <p><b>TF Co-Cordinator:</b> Aunty Prema</p>
+    </div>
+
+    <!-- Church Information -->
+    <div class="card">
+      <h2>Church Information</h2>
+      <p><b>Address:</b><br>
+        197, Jln Sultan Abdul Samad,<br>
+        Brickfields, 50470 Kuala Lumpur</p>
+      <p><b>Phone:</b> +6016-985 6777</p>
+      <p><b>Email:</b> kltelugufellowship@gmail.com</p>
+      <p><b>Sunday Service:</b> 4:00 PM to 6:00 PM</p>
+    </div>
+  </section>
 
   <script>
     const sheetUrl = "https://script.google.com/macros/s/AKfycbwL20prus-KYONoK7IV50CHc2pfy-tUZQ6ptmZm4Sp2NQmwV4xaJx8N2JDr3EAyj1IF/exec"; // Replace with your Apps Script URL
@@ -167,14 +186,15 @@
         tbody.innerHTML = "";
         data.forEach((row, index) => {
           let fee = 0;
+          const tshirtRaw = row["T-Shirt"] || "";
+          const tshirt = tshirtRaw.trim().toUpperCase();
           if (row.Role && row.Role.toLowerCase() === "player") {
             fee = 5 + 15; // registration + food
-            const tshirt = row["T-Shirt"] ? row["T-Shirt"].trim().toUpperCase() : "NOTNEEDED";
-            if (tshirt && tshirt !== "NONE" && tshirt !== "NOTNEEDED") {
-              fee += 19.5; // optional T-Shirt
+            if (tshirt && tshirt !== "NONE" && tshirt !== "NOT NEEDED") {
+              fee += 19.5;
             }
           } else { // spectator
-            fee = 15; // only food
+            fee = 15;
           }
           totalRM += fee;
 
@@ -228,6 +248,23 @@
           summaryHtml += `<p><b>${size}:</b> ${tshirtCount[size]}</p>`;
         });
         document.getElementById("tshirtSummary").innerHTML = summaryHtml;
+
+        // --- Sport Chart ---
+        const chartLabels = Object.keys(sportGroups);
+        const chartData = Object.values(sportGroups).map(arr => arr.length);
+
+        new Chart(document.getElementById("sportChart"), {
+          type: "bar",
+          data: {
+            labels: chartLabels,
+            datasets: [{
+              label: 'Number of Participants',
+              data: chartData,
+              backgroundColor: ['#4b0082', '#6a0dad', '#00C49F', '#FFBB28', '#FF8042']
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } }
+        });
 
       } catch (err) {
         console.error("Error fetching sheet data", err);
