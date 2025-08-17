@@ -82,20 +82,14 @@
   <script>
     async function fetchData() {
       try {
-        // Replace with your published Google Sheet CSV link
-        const sheetUrl = "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/pub?output=csv";
-        const response = await fetch(sheetUrl);
-        const data = await response.text();
-
-        const rows = data.split("\n").slice(1); // skip header
-        const participants = rows.map(r => {
-          const cols = r.split(",");
-          return { Name: cols[0], Sports: cols[1], Role: cols[2], Tshirt: cols[3] };
-        }).filter(p => p.Name);
+        // Use Google Apps Script Web App as JSON API endpoint
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbwL20prus-KYONoK7IV50CHc2pfy-tUZQ6ptmZm4Sp2NQmwV4xaJx8N2JDr3EAyj1IF/exec";
+        const response = await fetch(scriptUrl);
+        const participants = await response.json();
 
         renderDashboard(participants);
       } catch (e) {
-        console.error("Error fetching Google Sheet data", e);
+        console.error("Error fetching Google Script data", e);
       }
     }
 
