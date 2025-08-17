@@ -50,7 +50,7 @@
             <th>Name</th>
             <th>Sports</th>
             <th>Role</th>
-            <th>T-Shirt</th>
+            <th>T-Shirt Size</th>
           </tr>
         </thead>
         <tbody id="participantTable"></tbody>
@@ -96,16 +96,19 @@
     function renderDashboard(participants) {
       const sportsCount = {};
       participants.forEach(p => {
-        p.Sports.split(";").forEach(sport => {
-          const s = sport.trim();
-          if (s) sportsCount[s] = (sportsCount[s] || 0) + 1;
-        });
+        if (p.Sports) {
+          p.Sports.split(";").forEach(sport => {
+            const s = sport.trim();
+            if (s) sportsCount[s] = (sportsCount[s] || 0) + 1;
+          });
+        }
       });
 
       const tshirtCount = {};
       participants.forEach(p => {
-        if (p.Tshirt && p.Tshirt !== "Not needed") {
-          tshirtCount[p.Tshirt] = (tshirtCount[p.Tshirt] || 0) + 1;
+        const size = p["T-Shirt"] || p["Tshirt"] || p["T_Shirt"];
+        if (size && size !== "Not needed") {
+          tshirtCount[size] = (tshirtCount[size] || 0) + 1;
         }
       });
 
@@ -123,8 +126,9 @@
       const tableBody = document.getElementById("participantTable");
       tableBody.innerHTML = "";
       participants.forEach(p => {
+        const size = p["T-Shirt"] || p["Tshirt"] || p["T_Shirt"] || "";
         const row = document.createElement("tr");
-        row.innerHTML = `<td>${p.Name}</td><td>${p.Sports}</td><td>${p.Role}</td><td>${p.Tshirt}</td>`;
+        row.innerHTML = `<td>${p.Name || ''}</td><td>${p.Sports || ''}</td><td>${p.Role || ''}</td><td>${size}</td>`;
         tableBody.appendChild(row);
       });
     }
