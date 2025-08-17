@@ -62,6 +62,16 @@
       background: #6a1b9a;
       color: white;
     }
+    .summary-box {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .summary-box p {
+      margin: 5px 0;
+    }
     @media (max-width: 768px) {
       header { flex-direction: column; align-items: flex-start; }
       header img { margin-bottom: 10px; }
@@ -98,6 +108,12 @@
     </div>
   </section>
 
+  <!-- T-Shirt Summary -->
+  <section>
+    <h2>T-Shirt Size Summary</h2>
+    <div class="summary-box" id="tshirtSummary">Loading...</div>
+  </section>
+
   <!-- Sports Participation Table -->
   <section>
     <h2>Sports Participation (By Game)</h2>
@@ -110,6 +126,7 @@
     <table id="participantTable">
       <thead>
         <tr>
+          <th>S.No</th>
           <th>Name</th>
           <th>Sports</th>
           <th>Role</th>
@@ -128,12 +145,13 @@
         const res = await fetch(sheetUrl);
         const data = await res.json();
 
-        // Build Participant List
+        // --- Build Participant List with S.No ---
         const tbody = document.querySelector("#participantTable tbody");
         tbody.innerHTML = "";
-        data.forEach(row => {
+        data.forEach((row, index) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
+            <td>${index + 1}</td>
             <td>${row["Name"] || ""}</td>
             <td>${row["Sports"] || ""}</td>
             <td>${row["Role"] || ""}</td>
@@ -142,24 +160,42 @@
           tbody.appendChild(tr);
         });
 
-        // Group by Sport
+        // --- Group by Sport (names only) ---
         const sportGroups = {};
         data.forEach(row => {
           if (!row["Sports"]) return;
           row["Sports"].split(",").forEach(sport => {
             sport = sport.trim();
             if (!sportGroups[sport]) sportGroups[sport] = [];
-            sportGroups[sport].push(row["Name"] + " (" + (row["T-Shirt"] || "-") + ")");
+            sportGroups[sport].push(row["Name"]);
           });
         });
 
         // Build Sports Table
-        let sportsHtml = "<table><tr><th>Sport</th><th>Participants</th></tr>";
+        let sportsHtml = "<table><tr><th>S.No</th><th>Sport</th><th>Participants</th></tr>";
+        let sportIndex = 1;
         Object.keys(sportGroups).forEach(sport => {
-          sportsHtml += `<tr><td>${sport}</td><td>${sportGroups[sport].join(", ")}</td></tr>`;
+          sportsHtml += `<tr>
+            <td>${sportIndex++}</td>
+            <td>${sport}</td>
+            <td>${sportGroups[sport].join(", ")}</td>
+          </tr>`;
         });
         sportsHtml += "</table>";
         document.getElementById("sportsTable").innerHTML = sportsHtml;
+
+        // --- T-Shirt Summary Count ---
+        const tshirtCount = {};
+        data.forEach(row => {
+          let size = row["T-Shirt"] ? row["T-Shirt"].trim().toUpperCase() : "N/A";
+          tshirtCount[size] = (tshirtCount[size] || 0) + 1;
+        });
+
+        let summaryHtml = "";
+        Object.keys(tshirtCount).forEach(size => {
+          summaryHtml += `<p><b>${size}:</b> ${tshirtCount[size]}</p>`;
+        });
+        document.getElementById("tshirtSummary").innerHTML = summaryHtml;
 
       } catch (err) {
         console.error("Error fetching sheet data", err);
