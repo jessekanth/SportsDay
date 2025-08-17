@@ -131,24 +131,44 @@
           <th>Sports</th>
           <th>Role</th>
           <th>T-Shirt</th>
+          <th>Fee (RM)</th>
         </tr>
       </thead>
       <tbody></tbody>
+      <tfoot>
+        <tr id="totalRow">
+          <td colspan="5" style="text-align:right;"><b>Total RM</b></td>
+          <td id="totalFee">0</td>
+        </tr>
+      </tfoot>
     </table>
   </section>
 
   <script>
-    const sheetUrl = "https://script.google.com/macros/s/AKfycbwL20prus-KYONoK7IV50CHc2pfy-tUZQ6ptmZm4Sp2NQmwV4xaJx8N2JDr3EAyj1IF/exec"; // replace with your Apps Script web app URL
+    const sheetUrl = "https://script.google.com/macros/s/AKfycbwL20prus-KYONoK7IV50CHc2pfy-tUZQ6ptmZm4Sp2NQmwV4xaJx8N2JDr3EAyj1IF/exec"; // Replace with your Apps Script URL
 
     async function fetchData() {
       try {
         const res = await fetch(sheetUrl);
         const data = await res.json();
 
-        // --- Build Participant List with S.No ---
+        let totalRM = 0;
+
+        // --- Participant Table ---
         const tbody = document.querySelector("#participantTable tbody");
         tbody.innerHTML = "";
         data.forEach((row, index) => {
+          let fee = 0;
+          if (row.Role && row.Role.toLowerCase() === "player") {
+            fee += 5 + 15; // registration + food
+            // Optional T-Shirt
+            const tshirt = row["T-Shirt"] ? row["T-Shirt"].trim().toUpperCase() : "NOTNEEDED";
+            if (tshirt && tshirt !== "NONE" && tshirt !== "NOTNEEDED") fee += 19.5;
+          } else { // spectator
+            fee += 15;
+          }
+          totalRM += fee;
+
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${index + 1}</td>
@@ -156,9 +176,12 @@
             <td>${row["Sports"] || ""}</td>
             <td>${row["Role"] || ""}</td>
             <td>${row["T-Shirt"] || ""}</td>
+            <td>${fee.toFixed(2)}</td>
           `;
           tbody.appendChild(tr);
         });
+
+        document.getElementById("totalFee").textContent = totalRM.toFixed(2);
 
         // --- Group by Sport (names only) ---
         const sportGroups = {};
@@ -184,7 +207,7 @@
         sportsHtml += "</table>";
         document.getElementById("sportsTable").innerHTML = sportsHtml;
 
-        // --- T-Shirt Summary Count ---
+        // --- T-Shirt Summary ---
         const tshirtCount = {};
         data.forEach(row => {
           let size = row["T-Shirt"] ? row["T-Shirt"].trim().toUpperCase() : "N/A";
@@ -204,7 +227,7 @@
     }
 
     fetchData();
-    setInterval(fetchData, 60000); // auto-refresh every 60s
+    setInterval(fetchData, 60000); // refresh every 60s
   </script>
 </body>
 </html>
