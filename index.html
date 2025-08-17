@@ -82,22 +82,33 @@
   <script>
     async function fetchData() {
       try {
-        // Use Google Apps Script Web App as JSON API endpoint
         const scriptUrl = "https://script.google.com/macros/s/AKfycbwL20prus-KYONoK7IV50CHc2pfy-tUZQ6ptmZm4Sp2NQmwV4xaJx8N2JDr3EAyj1IF/exec";
         const response = await fetch(scriptUrl);
         const participants = await response.json();
-
         renderDashboard(participants);
       } catch (e) {
         console.error("Error fetching Google Script data", e);
       }
     }
 
+    function normalizeSize(size) {
+      if (!size) return "";
+      const s = size.toString().trim().toUpperCase().replace(/\s+/g, "");
+      if (["S","M","L","XL","XXL","XXXL"].includes(s)) return s;
+      if (s.includes("SMALL")) return "S";
+      if (s.includes("MEDIUM")) return "M";
+      if (s.includes("LARGE") && !s.includes("X")) return "L";
+      if (s.includes("XL")) return "XL";
+      if (s.includes("XXL")) return "XXL";
+      if (s.includes("XXXL")) return "XXXL";
+      return s;
+    }
+
     function renderDashboard(participants) {
       const sportsCount = {};
       participants.forEach(p => {
         if (p.Sports) {
-          p.Sports.split(";").forEach(sport => {
+          p.Sports.split(/[;,]/).forEach(sport => {
             const s = sport.trim();
             if (s) sportsCount[s] = (sportsCount[s] || 0) + 1;
           });
@@ -106,8 +117,9 @@
 
       const tshirtCount = {};
       participants.forEach(p => {
-        const size = p["T-Shirt"] || p["Tshirt"] || p["T_Shirt"];
-        if (size && size !== "Not needed") {
+        const rawSize = p["T-Shirt"] || p["Tshirt"] || p["T_Shirt"] || p["Tshirt Size"];
+        const size = normalizeSize(rawSize);
+        if (size && size !== "NOTNEEDED" && size !== "NONE") {
           tshirtCount[size] = (tshirtCount[size] || 0) + 1;
         }
       });
@@ -126,14 +138,14 @@
       const tableBody = document.getElementById("participantTable");
       tableBody.innerHTML = "";
       participants.forEach(p => {
-        const size = p["T-Shirt"] || p["Tshirt"] || p["T_Shirt"] || "";
+        const rawSize = p["T-Shirt"] || p["Tshirt"] || p["T_Shirt"] || p["Tshirt Size"];
+        const size = normalizeSize(rawSize);
         const row = document.createElement("tr");
         row.innerHTML = `<td>${p.Name || ''}</td><td>${p.Sports || ''}</td><td>${p.Role || ''}</td><td>${size}</td>`;
         tableBody.appendChild(row);
       });
     }
 
-    // Auto-refresh every 60 seconds
     fetchData();
     setInterval(fetchData, 60000);
   </script>
